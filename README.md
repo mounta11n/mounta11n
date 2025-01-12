@@ -34,12 +34,4 @@ i am currently a lot into ml and language models and all that trendy stuff.
 
 **ah, one more thing:**
 
-```
-      /\
-     /  \
-    /    \                       _     _
-   /      \                     | |__ | |___      __
-  /   ,,   \                    | '_ \| __\ \ /\ / /
- /   |  |   \       _   _   _   | |_) | |_ \ V  V /
-/_-''    ''-_\     (_) (_) (_)  |_.__/ \__| \_/\_/
-```
+I no longer use Arch btw, but openSUSE Tumbleweed
