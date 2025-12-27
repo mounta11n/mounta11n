@@ -122,13 +122,26 @@ parse_github_keys() {
     
     # Try jq first if available
     if command_exists jq; then
-        echo "$json_data" | jq -r '.[].key' 2>/dev/null
-        return $?
+        local result=$(echo "$json_data" | jq -r '.[].key' 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$result" ]; then
+            echo "$result"
+            return 0
+        fi
     fi
     
     # Fallback to grep/sed parsing
+    # Note: This is a simple fallback for basic JSON. May not handle all edge cases.
     log_warn "jq not found, using grep/sed fallback for JSON parsing"
-    echo "$json_data" | grep '"key"' | sed 's/.*"key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/'
+    local result=$(echo "$json_data" | grep '"key"' | sed 's/.*"key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    
+    # Validate that extracted keys look like SSH keys
+    if [ -n "$result" ] && echo "$result" | grep -qE "^(ssh-|ecdsa-|sk-)"; then
+        echo "$result"
+        return 0
+    else
+        log_error "Failed to parse valid SSH keys from JSON response"
+        return 1
+    fi
 }
 
 # ==============================================================================
@@ -191,8 +204,8 @@ add_keys() {
         log_info "Skipped $duplicate_count duplicate key(s)"
     fi
     
-    # Count total keys
-    local total_keys=$(grep -c "^ssh-\|^ecdsa-\|^ed25519" "$AUTH_KEYS_FILE" 2>/dev/null || echo "0")
+    # Count total keys - more comprehensive pattern for various SSH key types
+    local total_keys=$(grep -cE "^(ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521|sk-ecdsa-sha2-nistp256|sk-ssh-ed25519)" "$AUTH_KEYS_FILE" 2>/dev/null || echo "0")
     log_info "Total keys in authorized_keys: $total_keys"
     
     echo "$new_keys_count"
@@ -201,6 +214,9 @@ add_keys() {
 # ==============================================================================
 # ntfy.sh Notification
 # ==============================================================================
+# SECURITY NOTE: Notifications include server information (hostname, IP, system).
+# Only use this feature with private ntfy topics if you want to keep server details confidential.
+# Public topics like "inbox" will expose this information.
 
 send_notification() {
     local github_user="$1"
@@ -213,8 +229,14 @@ send_notification() {
     log_info "Sending notification to ntfy.sh topic: $topic"
     
     # Gather system information
+    # Note: This information may be sensitive. Use private topics for production servers.
     local hostname=$(hostname 2>/dev/null || echo "unknown")
-    local public_ip=$(fetch_url "https://api.ipify.org" 2>/dev/null || echo "unknown")
+    
+    # Optional: Fetch public IP (requires external service call)
+    # Set to "hidden" by default for security. Uncomment the line below to include it.
+    local public_ip="hidden"
+    # local public_ip=$(fetch_url "https://api.ipify.org" 2>/dev/null || echo "unknown")
+    
     local system_info=$(uname -a 2>/dev/null || echo "unknown")
     local timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC" 2>/dev/null)
     local goodbye=$(get_random_goodbye)
