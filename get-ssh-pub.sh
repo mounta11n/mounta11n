@@ -87,21 +87,23 @@ fetch_url() {
             sleep $RETRY_DELAY
         fi
         
-        # Try curl first
+        # Try curl first, then wget even if curl exists but fails
         if command_exists curl; then
             result=$(curl -s --connect-timeout $CONNECT_TIMEOUT --max-time $MAX_TIME "$url" 2>/dev/null)
             if [ $? -eq 0 ] && [ -n "$result" ]; then
                 echo "$result"
                 return 0
             fi
-        # Fallback to wget
-        elif command_exists wget; then
+            log_warn "curl failed (attempt $attempt); trying wget fallback"
+        fi
+
+        if command_exists wget; then
             result=$(wget -q --timeout=$MAX_TIME --tries=1 -O - "$url" 2>/dev/null)
             if [ $? -eq 0 ] && [ -n "$result" ]; then
                 echo "$result"
                 return 0
             fi
-        else
+        elif ! command_exists curl; then
             log_error "Neither curl nor wget is available"
             return 1
         fi
