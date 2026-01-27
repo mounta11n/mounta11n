@@ -1,7 +1,6 @@
 *GPT-5 Answer*
 
 
----
 
 ### Bootstrap eines neuen Systems (Einzeiler)
 Auf dem neuen Server
@@ -133,35 +132,58 @@ Und in Skripten/Files:
 
 ### Externe Artefakte und Binärdateien
 
-- Mit .chezmoiexternal kannst du auch Archive/Binaries holen:
+*Mit .chezmoiexternal kannst du auch Archive/Binaries holen*
+
+```sh
 ["bin/fd"]
 type = "archive"
 url = "https://github.com/sharkdp/fd/releases/download/v9.0.0/fd-v9.0.0-x86_64-unknown-linux-gnu.tar.gz"
 stripComponents = 1
 path = "~/.local/bin"
+```
 
-Sicherheit/Secrets
-- Chezmoi integriert age/GPG. Geheimnisse als *.tmpl rendern und lokal entschlüsseln:
-  - z.B. dot_config/myapp/creds.tmpl liest {{ (include "secret age:…" | trim) }}
-  - So landen keine Secrets im Klartext im Repo.
 
-Typischer Ablauf auf dem neuen Hetzner-VPS
-- Als User mit sudo:
-  sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/user/dotfiles.git
-- chezmoi:
+#### Sicherheit/Secrets
+
+> Chezmoi integriert age/GPG. Geheimnisse als *.tmpl rendern und lokal entschlüsseln
+> 
+> z.B. dot_config/myapp/creds.tmpl liest {{ (include "secret age:…" | trim) }}
+> 
+> So landen keine Secrets im Klartext im Repo.
+
+---
+
+### Typischer Ablauf auf neuen VPS
+
+*Als User mit sudo*
+
+```sh
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/mounta11n/dotfiles.git
+```
+
+
+- chezmoi ->
   - installiert Dotfiles
   - führt run_once_*-Skripte aus (apt, zsh, oh-my-zsh)
   - lädt Externals (oh-my-zsh, Binaries) gemäß .chezmoiexternal
-- Danach ggf. erneut:
+- Danach ggf. erneut ->
+  
+  ```sh
   chezmoi apply -v
+  ```
+
   um geänderte Templates/Skripte erneut anzuwenden.
 
-Tipps
-- Idempotenz: Skripte so schreiben, dass mehrfaches apply keine Fehler verursacht.
-- Reihenfolge: 10_, 20_, 30_… in Dateinamen helfen bei der Sortierung.
-- Interaktivität vermeiden (DEBIAN_FRONTEND=noninteractive, chsh nur ausführen wenn nötig).
-- Tags/Rollen: Über .chezmoi.toml(.tmpl) ein “role” setzen und in Templates/Skripten darauf prüfen.
-- macOS/Homebrew: Analog per run_once_… brew installieren und Brewfile anwenden.
-- Testen: Auf einer frischen VM/Container testen, dann auf dem produktiven VPS verwenden.
+---
 
-Wenn du magst, poste dein Repo-Aufbau, dann skizziere ich dir konkrete Dateien für deine Ziele (apt‑Pakete, zsh/oh‑my‑zsh, SSH‑Härtung, Fail2ban, etc.).
+#### Tipps
+
+- **Idempotenz** Skripte so schreiben, dass mehrfaches apply keine Fehler verursacht.
+- **Reihenfolge** 10_, 20_, 30_… in Dateinamen helfen bei der Sortierung.
+- **Interaktivität** vermeiden (DEBIAN_FRONTEND=noninteractive, chsh nur ausführen wenn nötig).
+- **Tags/Rollen** Über .chezmoi.toml(.tmpl) ein “role” setzen und in Templates/Skripten darauf prüfen.
+- **macOS/Homebrew** Analog per run_once_… brew installieren und Brewfile anwenden.
+- **Testen** Auf einer frischen VM/Container testen, dann auf dem produktiven VPS verwenden.
+
+*(Nicht vergessen apt‑Pakete, zsh/oh‑my‑zsh, SSH‑Härtung, Fail2ban, etc.)*
+0
